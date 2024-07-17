@@ -387,11 +387,11 @@ def create_report(result, *, decimal_places=3):
             mystats = []
             if (result.force_mode is not None and result.force_mode=='parametric') or \
                     (result.force_mode is None and result.all_normal):
-                mystats.append("M=%.*f+-%.*f" % (decimal_places, result.rankdf.at[population, 'mean'],
+                mystats.append("M=%.*f±%.*f" % (decimal_places, result.rankdf.at[population, 'mean'],
                                                  decimal_places, halfwidth))
                 mystats.append("SD=%.*f" % (decimal_places, result.rankdf.at[population, 'std']))
             else:
-                mystats.append("MD=%.*f+-%.*f" % (decimal_places, result.rankdf.at[population, 'median'],
+                mystats.append("MD=%.*f±%.*f" % (decimal_places, result.rankdf.at[population, 'median'],
                                                   decimal_places, halfwidth))
                 mystats.append("MAD=%.*f" % (decimal_places, result.rankdf.at[population, 'mad']))
             if with_rank:
@@ -841,7 +841,7 @@ def latex_report(result, *, decimal_places=3, prefix="", generate_plots=True, fi
     report = sys.stdout.getvalue()
     sys.stdout = old_stdout
     report = report.replace("_", r"\_")
-    report = report.replace("+-", r"$\pm$")
+    report = report.replace("±", r"$\pm$")
     report = report.replace("(d=", "($d$=")
     report = report.replace("(delta=", r"($\delta$=")
     report = report.replace("is alpha", r"$\alpha$")
