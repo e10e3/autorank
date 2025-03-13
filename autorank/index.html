@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>autorank - Autorank</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "autorank";
+        var mkdocs_page_input_path = "autorank.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> Autorank
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">autorank</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">Autorank</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">autorank</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="autorank.autorank">autorank</h1>
+
+<pre><code class="language-python">autorank(data,
+         alpha=0.05,
+         verbose=False,
+         order='descending',
+         approach='frequentist',
+         rope=0.1,
+         rope_mode='effsize',
+         nsamples=50000,
+         effect_size=None,
+         force_mode=None,
+         random_state=None)
+</code></pre>
+<p>Automatically compares populations defined in a block-design data frame. Each column in the data frame contains
+the samples for one population. The data must not contain any NaNs. The data must have at least five measurements,
+i.e., rows. The current version is only reliable for less than 5000 measurements.</p>
+<p>The following approach is implemented by this function.</p>
+<ul>
+<li>First all columns are checked with the Shapiro-Wilk test for normality. We use Bonferoni correction for these
+  tests, i.e., alpha/len(data.columns).</li>
+<li>If all columns are normal, we use Bartlett's test for homogeneity, otherwise we use Levene's test.</li>
+<li>Based on the normality and the homogeneity, we select appropriate tests, effect sizes, and methods for determining
+  the confidence intervals of the central tendency.</li>
+</ul>
+<p>If all columns are normal, we calculate:</p>
+<ul>
+<li>The mean value as central tendency.</li>
+<li>The empirical standard deviation as measure for the variance.</li>
+<li>The confidence interval for the mean value.</li>
+<li>The effect size in comparison to the highest mean value using Cohen's d.</li>
+</ul>
+<p>If at least one column is not normal, we calculate:</p>
+<ul>
+<li>The median as central tendency.</li>
+<li>The median absolute deviation from the median as measure for the variance.</li>
+<li>The confidence interval for the median.</li>
+<li>The effect size in comparison to the highest ranking approach using Cliff's delta.</li>
+</ul>
+<p>For the statistical tests, there are five variants:</p>
+<ul>
+<li>If approach=='bayesian' we use a Bayesian signed rank test.</li>
+<li>If there are two populations (columns) and both populations are normal, we use the paired t-test.</li>
+<li>If there are two populations and at least one populations is not normal, we use Wilcoxon's signed rank test.</li>
+<li>If there are more than two populations and all populations are normal and homoscedastic, we use repeated measures
+  ANOVA with Tukey's HSD as post-hoc test.</li>
+<li>If there are more than two populations and at least one populations is not normal or the populations are
+  heteroscedastic, we use Friedman's test with the Nemenyi post-hoc test.</li>
+</ul>
+<p><strong>Parameters</strong></p>
+<p>data (DataFrame):
+    Each column contains a population and each row contains the paired measurements
+    for the populations.</p>
+<p>alpha (float, default=0.05):
+    Significance level. We internally use correction to ensure that all results (incl. confidence
+    intervals) together fulfill this confidence level.</p>
+<p>verbose (bool, default=False):
+    Prints decisions and p-values while running the autorank function to stdout.</p>
+<p>order (string, default='descending'):
+    Determines the ordering central tendencies of the populations for the ranking. 'descending' results in higher
+    ranks for larger values. 'ascending' results in higher ranks for smaller values.</p>
+<p>approach (string, default='frequentist'):
+    With 'frequentist', a suitable frequentist statistical test is used (t-test, Wilcoxon signed rank test,
+    ANOVA+Tukey's HSD, or Friedman+Nemenyi). With 'bayesian', the Bayesian signed ranked test is used.
+    <em>(New in Version 1.1.0)</em></p>
+<p>rope (float, default=0.01):
+    Region of Practical Equivalence (ROPE) used for the bayesian analysis. The statistical analysis assumes that
+    differences from the central tendency that are within the ROPE do not matter in practice. Therefore, such
+    deviations may be considered to be equivalent. The ROPE is defined as an interval around the central tendency
+    and the calculation of the interval is determined by the rope_mode parameter.
+    <em>(New in Version 1.1.0)</em></p>
+<p>rope_mode (string, default='effsize'):
+    Method to calculate the size of the ROPE. With 'effsize', the ROPE is determined dynamically for each comparison
+    of two populations as rope*effect_size, where effect size is either Cohen's d (normal data) or Akinshin's gamma
+    (non-normal data). With 'absolute', the ROPE is defined using an absolute value that is used, i.e., the value of
+    the rope parameter is used without any modification.
+    <em>(New in Version 1.1.0)</em></p>
+<p>nsamples (integer, default=50000):
+    Number of samples used to estimate the posterior probabilities with the Bayesian signed rank test.
+    <em>(New in Version 1.1.0)</em></p>
+<p>effect_size (string, default=None):
+    Effect size measure that is used for reporting. If None, the effect size is automatically selected as described
+    in the flow chart. The following effect sizes are supported: "cohen_d", "cliff_delta", "akinshin_gamma".
+    <em>(New in Version 1.1.0)</em></p>
+<p>force_mode (string, default=None):
+    Can be used to force autorank to use parametric or nonparametric frequentist tests. With 'parametric' you
+    automatically get the t-test/repeated measures ANOVA. With 'nonparametric' you automatically get Wilcoxon's
+    signed rank test/Friedman test.</p>
+<p>random_state (integer, default=None):
+    Seed for random state. Forwarded to Bayesian signed rank test to enable reproducible sampling and, thereby,
+    reproducible results.
+    <em>(New in Version 1.2.0)</em></p>
+<p><strong>Returns</strong></p>
+<p>A named tuple of type RankResult with the following entries.</p>
+<p>rankdf (DataFrame):
+    Ranked populations including statistics about the populations.</p>
+<p>pvalue (float):
+    p-value of the omnibus test for the difference in central tendency between the populations. Not used with
+    Bayesian statistics.</p>
+<p>omnibus (string):
+   Omnibus test that is used for the test of a difference ein the central tendency.</p>
+<p>posthoc (string):
+    Posthoc tests that was used. The posthoc test is performed even if the omnibus test is not significant. The
+    results should only be used if the p-value of the omnibus test indicates significance. None in case of two
+    populations and Bayesian statistics.</p>
+<p>cd (float):
+    The critical distance of the Nemenyi posthoc test, if it was used. Otherwise None.</p>
+<p>all_normal (bool):
+    True if all populations are normal, false if at least one is not normal.</p>
+<p>pvals_shapiro (list):
+    p-values of the Shapiro-Wilk tests for normality sorted by the order of the input columns.</p>
+<p>homoscedastic (bool):
+    True if populations are homoscedastic, false otherwise. None in case of Bayesian statistics.</p>
+<p>pval_homogeneity (float):
+    p-value of the test for homogeneity. None in case of Bayesian statistics.</p>
+<p>homogeneity_test (string):
+    Test used for homogeneity. Either 'bartlet' or 'levene'.</p>
+<p>alpha (float):
+    Family-wise significant level. Same as input parameter.</p>
+<p>alpha_normality (float):
+    Corrected alpha that is used for tests for normality.</p>
+<p>num_samples (int):
+    Number of samples within each population.</p>
+<p>order (string):
+    Order of the central tendencies used for ranking.</p>
+<p>sample_matrix (DataFrame):
+    Matrix with SignedRankTest objects from package baycomp. Can be used to do further analysis, e.g. to generate
+    plots using the built-in plot() method of baycomp. For a detailed description of methods and parameters, see
+    the documentation of baycomp: https://baycomp.readthedocs.io/en/latest/classes.html#multiple-data-sets
+    <em>(New in Version 1.2.0)</em></p>
+<p>posterior_matrix (DataFrame):
+    Matrix with the pair-wise posterior probabilities estimated with the Bayesian signed ranked test. The matrix
+    is a square matrix with the populations sorted by their central tendencies as rows and columns. The value of
+    the matrix in the i-th row and the j-th column contains a 3-tuple (p_smaller, p_equal, p_greater) such that
+    p_smaller is the probability that the population in column j is smaller than the population in row i, p_equal
+    that both populations are equal, and p_larger that population j is larger than population i. If rope==0.0, the
+    matrix contains only 2-tuples (p_smaller, p_greater) because equality is not possible without a ROPE.
+    <em>(New in Version 1.1.0)</em></p>
+<p>decision_matrix (DataFrame):
+    Matrix with the pair-wise decisions made with the Bayesian signed ranked test. The matrix is a square matrix
+    with the populations sorted by their central tendencies as rows and columns. The value of
+    the matrix in the i-th row and the j-th column contains the value 'smaller' if the population in column j is
+    significantly larger than the population in row i, 'equal' is both populations are equivalent (i.e., have no
+    practically relevant difference), 'larger' if the population in column j is larger than the population in
+    column i, and 'inconclusive' if the statistical analysis is did not yield a definitive result.
+    <em>(New in Version 1.1.0)</em></p>
+<p>rope (float):
+    Region of Practical Equivalence (ROPE). Same as input parameter.
+    <em>(New in Version 1.1.0)</em></p>
+<p>rope_mode (string):
+    Mode for calculating the ROPE. Same as input parameter.
+    <em>(New in Version 1.1.0)</em></p>
+<h1 id="autorank.create_report">create_report</h1>
+
+<pre><code class="language-python">create_report(result, *, decimal_places)
+</code></pre>
+<p>Prints a report about the statistical analysis.</p>
+<p><strong>Parameters</strong></p>
+<p>result (RankResult):
+    Should be the return value the autorank function.</p>
+<p>decimal_places (int, default=3):
+    Number of decimal places that are used for the report.</p>
+<h1 id="autorank.plot_stats">plot_stats</h1>
+
+<pre><code class="language-python">plot_stats(result, *, allow_insignificant, ax, width)
+</code></pre>
+<p>Creates a plot that supports the analysis of the results of the statistical test. The plot depends on the
+statistical test that was used.</p>
+<ul>
+<li>Creates a Confidence Interval (CI) plot for a paired t-test between two normal populations. The confidence
+ intervals are calculated with Bonferoni correction, i.e., a confidence level of alpha/2.</li>
+<li>Creates a CI plot for Tukey's HSD as post-hoc test with the confidence intervals calculated using the HSD approach
+ such that the family wise significance is alpha.</li>
+<li>Creates Critical Distance (CD) diagrams for the Nemenyi post-hoc test. CD diagrams visualize the mean ranks of
+ populations. Populations that are not significantly different are connected by a horizontal bar.</li>
+</ul>
+<p>This function raises a ValueError if the omnibus test did not detect a significant difference. The allow_significant
+parameter allows the suppression of this exception and forces the creation of the plots.</p>
+<p><strong>Parameters</strong></p>
+<p>result (RankResult):
+    Should be the return value the autorank function.</p>
+<p>allow_insignificant (bool, default=False):
+    Forces plotting even if results are not significant.</p>
+<p>ax (Axis, default=None):
+    Matplotlib axis to which the results are added. A new figure with a single axis is created if None.</p>
+<p>width (float, default=None):
+    Specifies the width of the created plot is not None. By default, we use a width of 6. The height is
+    automatically determined, based on the type of plot and the number of populations. This parameter is ignored if
+    ax is not None.</p>
+<p><strong>Return</strong></p>
+<p>Axis with the plot. None if no plot was generated.</p>
+<h1 id="autorank.latex_table">latex_table</h1>
+
+<pre><code class="language-python">latex_table(result, *, decimal_places, label)
+</code></pre>
+<p>Creates a latex table from the results dataframe of the statistical analysis.</p>
+<p><strong>Parameters</strong></p>
+<p>result (RankResult):
+    Should be the return value the autorank function.</p>
+<p>decimal_places (int, default=3):
+    Number of decimal places that are used for the report.</p>
+<p>label (str, default=None):
+    Label of the table. Defaults to 'tbl:stat_results' if None.</p>
+<h1 id="autorank.latex_report">latex_report</h1>
+
+<pre><code class="language-python">latex_report(result, *, decimal_places, prefix, generate_plots,
+             figure_path, complete_document)
+</code></pre>
+<p>Creates a latex report of the statistical analysis.</p>
+<p><strong>Parameters</strong></p>
+<p>result (AutoRank):
+    Should be the return value the autorank function.</p>
+<p>decimal_places (int, default=3):
+    Number of decimal places that are used for the report.</p>
+<p>prefix (str, default=""):
+    Prefix that is added before all labels and plot file names.</p>
+<p>generate_plots (bool, default=True):
+    Decides if plots are generated, if the results are statistically significant.</p>
+<p>figure_path (str, default=""):
+    Path where the plots shall be written to. Ignored if generate_plots is False.</p>
+<p>complete_document (bool, default=True):
+    Generates a complete latex document if true. Otherwise only a single section is generated.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href=".." class="btn btn-neutral float-left" title="Home"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href=".." style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+      <script src="../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>
