@@ -82,7 +82,8 @@
          nsamples=50000,
          effect_size=None,
          force_mode=None,
-         random_state=None)
+         random_state=None,
+         plot_order=None)
 </code></pre>
 <p>Automatically compares populations defined in a block-design data frame. Each column in the data frame contains
 the samples for one population. The data must not contain any NaNs. The data must have at least five measurements,
@@ -157,11 +158,17 @@ i.e., rows. The current version is only reliable for less than 5000 measurements
 <p>force_mode (string, default=None):
     Can be used to force autorank to use parametric or nonparametric frequentist tests. With 'parametric' you
     automatically get the t-test/repeated measures ANOVA. With 'nonparametric' you automatically get Wilcoxon's
-    signed rank test/Friedman test.</p>
+    signed rank test/Friedman test. In case of Bayesian statistics, this parameter is used to override the automatic
+    selection of the effect size measure, such that 'parametric' uses Cohen's d and 'nonparametric' uses Akinshin's,
+    regardless of the normality of the data. If this parameter is None, the automatic selection is used.
+    <em>(Support for Bayesian statistics added in Version 1.3.0)</em></p>
 <p>random_state (integer, default=None):
     Seed for random state. Forwarded to Bayesian signed rank test to enable reproducible sampling and, thereby,
     reproducible results.
     <em>(New in Version 1.2.0)</em></p>
+<p>plot_order (list):
+    List with the order of the populations used for ploting, where reasonable (e.g., CI plots). If this is not none, this overrides the order parameter for visualizations.
+    <em>(New in Version 1.3.0)</em></p>
 <p><strong>Returns</strong></p>
 <p>A named tuple of type RankResult with the following entries.</p>
 <p>rankdf (DataFrame):
@@ -222,6 +229,13 @@ i.e., rows. The current version is only reliable for less than 5000 measurements
 <p>rope_mode (string):
     Mode for calculating the ROPE. Same as input parameter.
     <em>(New in Version 1.1.0)</em></p>
+<p>effect_size (string):
+    Effect size measure that is used for reporting. Same as input parameter.</p>
+<p>force_mode (string):
+    If not None, this is the force mode that was used to select the tests. Either 'parametric' or 'nonparametric'.</p>
+<p>plot_order (list):
+    If not None, this is the fixed order that is used for plotting, where possible. Otherwise None.
+    <em>(New in Version 1.3.0)</em></p>
 <h1 id="autorank.create_report">create_report</h1>
 
 <pre><code class="language-python">create_report(result, *, decimal_places)
@@ -263,7 +277,8 @@ parameter allows the suppression of this exception and forces the creation of th
 <p>Axis with the plot. None if no plot was generated.</p>
 <h1 id="autorank.latex_table">latex_table</h1>
 
-<pre><code class="language-python">latex_table(result, *, decimal_places, label)
+<pre><code class="language-python">latex_table(result, *, decimal_places, label, effect_size_relation,
+            posterior_relation)
 </code></pre>
 <p>Creates a latex table from the results dataframe of the statistical analysis.</p>
 <p><strong>Parameters</strong></p>
@@ -273,6 +288,18 @@ parameter allows the suppression of this exception and forces the creation of th
     Number of decimal places that are used for the report.</p>
 <p>label (str, default=None):
     Label of the table. Defaults to 'tbl:stat_results' if None.</p>
+<p>effect_size_relation (str, default="best"):
+    Specifies which effect size relation is used in the table. Can be "best", "above", or both.
+    If "best", the effect size is compute in relation to the best-ranked value.
+    If "above", the effect size is computed in relation to the value above in the row above.
+    With "both", both the best and the above are included in the table.
+    <em>(New in Version 1.3.0)</em></p>
+<p>posterior_relation (str, default="best"):
+    Specifies which posterior relation is used in the table. Can be "best", "above", or both.
+    If "best", the posterior is computed in relation to the best-ranked value.
+    If "above", the posterior is computed in relation to the value above in the row above.
+    With "both", both the best and the above are included in the table.
+    <em>(New in Version 1.3.0)</em></p>
 <h1 id="autorank.latex_report">latex_report</h1>
 
 <pre><code class="language-python">latex_report(result, *, decimal_places, prefix, generate_plots,
